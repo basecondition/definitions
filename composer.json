@@ -1,0 +1,20 @@
+{
+  "name": "basecondition/definitions",
+  "type": "library",
+  "description": "redaxo resource.",
+  "keywords": [
+    "basecondition",
+    "definitions"
+  ],
+  "homepage": "http://basecondition.com",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Joachim Doerr",
+      "email": "hello@basecondition.com"
+    }
+  ],
+  "require": {
+    "doctrine/cache": "~1.3"
+  }
+}

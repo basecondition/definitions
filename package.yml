@@ -1,0 +1,9 @@
+package: definitions
+version: 1.0.0
+author: Joachim Doerr
+supportpage: https://github.com/redaxo/redaxo
+
+requires:
+  redaxo: "^5.15"
+  php:
+    version: "^8.1"
