@@ -29,4 +29,9 @@ class base extends AbstractDefinitionProvider
         $template = new rex_template($id);
         return $template->getKey();
     }
+
+    public static function config(string|int|null $key = null, mixed $default = null): mixed
+    {
+        return parent::get($key, $default);
+    }
 }

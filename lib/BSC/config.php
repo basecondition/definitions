@@ -11,13 +11,15 @@
 namespace BSC;
 
 use BSC\Definition\AbstractDefinitionProvider;
+use rex_article;
 use rex_extension;
 use rex_extension_point;
+use rex_template;
 
 /**
  * @description die BSC\config klasse ist der zentrale rote configurationsfaden für template, navigation und module-einstellungen, settings und konfigurationen.
  *  zudem ist es natürlich möglich jede weitere config mit hilfe der bsc component klasse zu verwalten. die BSC\config wird automatisiert über die boot.php initialisiert.
- * TODO: description ausbauen -> verwendung beschreiben, EP's beschreiben, rückbezug auf definitions und base als info.
+ * TODO: description ausbauen -> verwendung beschreiben, EP's beschreiben, rückbezug auf definitions und config als info.
  */
 class config extends AbstractDefinitionProvider
 {
@@ -59,7 +61,7 @@ class config extends AbstractDefinitionProvider
         }
 
         // register extension point loaded
-        rex_extension::registerPoint(new rex_extension_point('BSC_CONFIG_LOADED', self::getConfig()));
+        rex_extension::registerPoint(new rex_extension_point('BSC_CONFIG_LOADED', self::get()));
     }
 
     public static function setConfig(array|string $config, string $alternativeKey = null): void
@@ -67,8 +69,9 @@ class config extends AbstractDefinitionProvider
         self::setDefinition($config, $alternativeKey);
     }
 
-    public static function getConfig(): array
+    public static function getAsBoolString(string|int $key): string
     {
-        return self::getDefinitions();
+        $value = self::get($key);
+        return ($value) ? 'true' : 'false';
     }
 }

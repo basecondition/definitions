@@ -11,7 +11,7 @@
 namespace BSC\Definition;
 
 
-use Doctrine\Common\Cache\FilesystemCache;
+use Doctrine\Common\Cache\PhpFileCache;
 use Symfony\Component\Yaml\Parser;
 use rex_addon;
 
@@ -25,7 +25,8 @@ class DefinitionProvider
     public static function load(array|string $searchSchemes, array $mergeHandler = null, array $toMerge = null, int $cacheTTL = self::CACHE_TTL): array
     {
         if (is_string($searchSchemes)) $searchSchemes = [$searchSchemes];
-        $cache = new FilesystemCache(rex_addon::get('components')->getCachePath('.definition'));
+
+        $cacheDriver = new PhpFileCache(rex_addon::get('definitions')->getCachePath('.definition'));
         $hashKeys = array();
         $groups = [];
 
@@ -57,7 +58,7 @@ class DefinitionProvider
         // set cache keys
         $cacheKey = md5(sprintf("%s:%s", __CLASS__, implode('.', $searchSchemes))) . '.' . md5(implode('.', $lastModifications));
         // load from cache
-        if ($definition = $cache->fetch($cacheKey)) {
+        if ($definition = $cacheDriver->fetch($cacheKey)) {
             // get cached content as output
             return $definition;
         }
@@ -81,7 +82,7 @@ class DefinitionProvider
         $definition = self::mergeParsedContents($parsedContents, $mergeHandler);
 
         // save cache
-        $cache->save($cacheKey, $definition, $cacheTTL);
+        $cacheDriver->save($cacheKey, $definition, $cacheTTL);
         return $definition;
     }
 

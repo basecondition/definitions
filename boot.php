@@ -30,6 +30,7 @@ rex_extension::register('PACKAGES_INCLUDED', static function () {
     // erst ganz am schluss nach dem yrewrite und ycom initialisiert wurde kann alles geladen und verarbeitet werden
 }, rex_extension::LATE);
 
+
 // wenn man eine config definition hinzufügen möchte geht das wie bei folgendem beispiel
 //rex_extension::register('BSC_CONFIG_LOAD', static function(rex_extension_point $ep) {
 //    /** @var array $subject */
