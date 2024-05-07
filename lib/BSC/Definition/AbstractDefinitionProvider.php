@@ -33,7 +33,15 @@ abstract class AbstractDefinitionProvider
         self::$searchSchemes = rex_extension::registerPoint(new rex_extension_point('BSC_DEFINITIONS_LOAD', $searchSchemes));
         foreach (self::$searchSchemes as $key => $schema) {
             // TODO config parameter base path für definitions
+
             self::$searchSchemes[$key] = rex_path::data($schema);
+
+            if (\rex_addon::exists('project') && \rex_addon::get('project')->isAvailable()) {
+                self::$searchSchemes[$key] = \rex_addon::get('project')->getPath($schema);
+            }
+            if (\rex_addon::exists('theme') && \rex_addon::get('theme')->isAvailable()) {
+                self::$searchSchemes[$key] = \theme_path::base('*/' . $schema);
+            }
         }
 
         $definitions = DefinitionProvider::load(self::$searchSchemes);

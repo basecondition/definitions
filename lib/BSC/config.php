@@ -74,4 +74,8 @@ class config extends AbstractDefinitionProvider
         $value = self::get($key);
         return ($value) ? 'true' : 'false';
     }
+
+    public static function getAll(): array {
+        return self::$definitions;
+    }
 }
