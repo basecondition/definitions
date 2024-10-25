@@ -1,12 +1,4 @@
 <?php
-/**
- * @package definitions
- * @author Joachim Doerr
- * @copyright (C) hello@basecondition.com
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
 
 namespace BSC\Definition;
 
@@ -36,12 +28,12 @@ abstract class AbstractDefinitionProvider
 
             self::$searchSchemes[$key] = rex_path::data($schema);
 
-            if (\rex_addon::exists('project') && \rex_addon::get('project')->isAvailable()) {
-                self::$searchSchemes[$key] = \rex_addon::get('project')->getPath($schema);
-            }
-            if (\rex_addon::exists('theme') && \rex_addon::get('theme')->isAvailable()) {
-                self::$searchSchemes[$key] = \theme_path::base('*/' . $schema);
-            }
+//            if (\rex_addon::exists('project') && \rex_addon::get('project')->isAvailable()) {
+//                self::$searchSchemes[$key] = \rex_addon::get('project')->getPath($schema);
+//            }
+//            if (\rex_addon::exists('theme') && \rex_addon::get('theme')->isAvailable()) {
+//                self::$searchSchemes[$key] = \theme_path::base('*/' . $schema);
+//            }
         }
 
         $definitions = DefinitionProvider::load(self::$searchSchemes);
