@@ -48,8 +48,7 @@ class DefinitionConfig
         $this->config = [
             'base_path' => $this->getConfigValue('base_path', $packageDefaults),
             'definition_keys' => $this->getDefinitionKeysConfig($packageDefaults),
-            'cache' => $this->getCacheConfig($packageDefaults),
-            'debug' => $this->getConfigValue('debug', $packageDefaults)
+            'cache' => $this->getCacheConfig($packageDefaults)
         ];
     }
 
@@ -99,9 +98,6 @@ class DefinitionConfig
         }
 
         return [
-            'enabled' => isset($savedCache['enabled'])
-                ? (bool)$savedCache['enabled']
-                : $defaultCache['enabled'],
             'ttl' => isset($savedCache['ttl'])
                 ? (int)$savedCache['ttl']
                 : $defaultCache['ttl']
@@ -146,9 +142,6 @@ class DefinitionConfig
         return $this->config[$key] ?? $default;
     }
 
-    /**
-     * Gibt die Package-Defaults zurück
-     */
     public function getPackageDefaults(): array
     {
         return $this->addon->getProperty('config', self::FALLBACKS);
