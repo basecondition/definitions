@@ -1,0 +1,26 @@
+definitions_title = Definitions
+definitions_settings = Settings
+
+definitions_config_saved = Settings have been saved
+definitions_error_save = Error saving settings
+
+definitions_base_path = Base Path
+definitions_base_path_note = Relative path from REDAXO root directory
+
+definitions_definition_key_navigation = Navigation
+definitions_definition_key_template = Templates
+definitions_definition_key_module = Modules
+definitions_definition_keys_note = Use *.yml for all YAML files in directory
+
+definitions_cache_enabled = Enable Cache
+definitions_cache_enabled_note = Enables/Disables the definition cache
+
+definitions_cache_ttl = Cache TTL
+definitions_cache_ttl_note = Time in seconds (default: 172800 = 48 hours)
+
+definitions_debug = Debug Mode
+definitions_debug_note = Shows extended debug information in backend
+
+# System categories
+definitions_system = System
+definitions_config = Configuration

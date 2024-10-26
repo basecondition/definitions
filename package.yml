@@ -7,3 +7,27 @@ requires:
   redaxo: "^5.15"
   php:
     version: "^8.1"
+
+# Neue Konfigurationsoptionen
+config:
+  base_path: "definitions"
+  definition_keys:
+    navigation: "navigation/*.yml"
+    template: "template/*.yml"
+    module: "module/*/*.yml"
+  cache:
+    ttl: 172800  # 48h in Sekunden
+
+# Backend Seiten
+page:
+  title: 'translate:title'
+  perm: admin
+  icon: rex-icon fa-code
+  subpages:
+    settings:
+      title: 'translate:settings'
+      icon: rex-icon fa-cog
+      perm: admin[]
+
+# Übersetzungen laden
+i18n: true

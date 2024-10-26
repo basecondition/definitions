@@ -14,78 +14,166 @@ Ein REDAXO-Addon zur zentralen Verwaltung von Konfigurationen und Definitionen �
 - Erweiterbare Struktur durch Extension Points
 - Unterstützung für Template-, Navigations- und Modulkonfigurationen
 - Automatisches Laden von Konfigurationen beim Systemstart
-- Vererbung von Definitionen durch `extend`-Funktionalität
+- Vererbung von Basis-Konfigurationen durch `extend`-Funktionalität
 - Flexible Registrierung von Definition-Verzeichnissen
+- Überschreiben von Definitionen durch strukturelle Übereinstimmung und Ladereihenfolge
+- Priorisierte Ladereihenfolge (EARLY, NORMAL, LATE)
 
 ## Installation
 
 1. Im REDAXO-Installer das Addon "definitions" auswählen und installieren
 2. Mindestvoraussetzungen:
-    - REDAXO >= 5.15.0
-    - PHP >= 8.1
+   - REDAXO >= 5.15.0
+   - PHP >= 8.1
 
 ## Grundlegende Verwendung
 
 ### Definition-Verzeichnisse registrieren
 
-Es gibt mehrere Möglichkeiten, Definition-Verzeichnisse zu registrieren:
+Die Registrierung erfolgt nach einer klaren Prioritätenreihenfolge, die bestimmt, wie Definitionen überschrieben werden:
 
-1. **Via boot.php im Project-Addon:**
+1. **Core/AddOn Definitionen (EARLY):**
 ```php
 rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
     $schemes = $ep->getSubject();
-    
-    // Projekt-spezifische Definitionen
-    $schemes[] = "theme/private/definitions/navigation/*.yml";
-    $schemes[] = "theme/private/definitions/template/*.yml";
-    
-    // Modul-spezifische Definitionen
-    $schemes[] = "theme/private/definitions/module/*/config.yml";
-    
+    // AddOn spezifische Definitionen
+    if ($addon = rex_addon::get('mein_addon')) {
+        $schemes[] = $addon->getPath('definitions/*.yml');
+    }
     return $schemes;
-});
+}, rex_extension::EARLY);
 ```
 
-2. **Via Extension Point für bestimmte Addons:**
+2. **Theme Definitionen (NORMAL):**
 ```php
-rex_extension::register('BSC_DEFINITIONS_LOAD', function(rex_extension_point $ep) {
+rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
     $schemes = $ep->getSubject();
-    
-    // Addon-spezifische Definitionen
-    $schemes[] = rex_addon::get('mein_addon')->getPath('definitions/*.yml');
-    
+    if (rex_addon::exists('theme') && $theme = rex_addon::get('theme')) {
+        // Definitionen im Theme-Ordner via theme_path::base()
+        $schemes[] = theme_path::base('private/definitions/navigation/*.yml');
+        $schemes[] = theme_path::base('private/definitions/template/*.yml');
+        $schemes[] = theme_path::base('private/definitions/module/*/*.yml');
+    }
     return $schemes;
 });
 ```
 
-### Standard-Verzeichnisstruktur
-
-Nach der Installation werden YAML-Dateien standardmäßig in folgendem Verzeichnis erwartet:
-
-```
-redaxo/data/definitions/
-├── navigation/
-│   └── main.yml
-├── template/
-│   └── default.yml
-└── module/
-    └── article.yml
+3. **Project-Addon Definitionen (LATE):**
+```php
+rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
+    $schemes = $ep->getSubject();
+    $projectPath = rex_addon::get('project')->getPath();
+    $schemes[] = $projectPath . 'definitions/navigation/*.yml';
+    $schemes[] = $projectPath . 'definitions/template/*.yml';
+    $schemes[] = $projectPath . 'definitions/module/*/*.yml';
+    return $schemes;
+}, rex_extension::LATE);
 ```
 
-Sie können diese Struktur durch die Registration zusätzlicher Verzeichnisse erweitern.
+### Empfohlene Verzeichnisstruktur
 
-### Basis-Konfiguration
+Nach der Installation wird folgende Verzeichnisstruktur empfohlen:
 
-Beispiel für eine einfache YAML-Konfigurationsdatei:
+```
+redaxo-root/
+├── themes/
+│   └── private/
+│       └── definitions/
+│           ├── navigation/
+│           ├── template/
+│           └── module/
+├── redaxo/
+│   ├── data/
+│   │   └── definitions/
+│   │       ├── navigation/
+│   │       ├── template/
+│   │       └── module/
+│   └── addons/
+│       └── project/
+│           └── definitions/
+│               ├── navigation/
+│               ├── template/
+│               └── module/
+```
+
+### Überschreiben von Definitionen
+
+Die Überschreibung von Definitionen erfolgt primär durch:
+1. Strukturelle Übereinstimmung der YAML-Struktur
+2. Die Ladereihenfolge (EARLY, NORMAL, LATE)
+
+Beispiel für Überschreibung:
 
 ```yaml
+# /redaxo/data/definitions/template/default.yml
 template:
   default:
-    name: Standard-Template
+    name: "Standard Template"
     sections:
       - header
       - content
       - footer
+
+# /themes/private/definitions/template/default.yml
+template:
+  default:
+    name: "Theme Template"    # überschreibt den Namen
+    sections:
+      - header
+      - slider              # überschreibt die sections komplett
+      - content
+      - footer
+
+# /redaxo/addons/project/definitions/template/default.yml
+template:
+  default:
+    name: "Projekt Template"  # überschreibt den Namen erneut
+```
+
+### Vererbung mittels extend
+
+Die `extend`-Funktionalität dient der Vererbung von Basis-Konfigurationen innerhalb einer Ebene:
+
+```yaml
+# /themes/private/definitions/template/base.yml
+template:
+  base:
+    sections:
+      - header
+      - content
+      - footer
+    defaults:
+      show_breadcrumb: true
+      cache_ttl: 3600
+
+# /themes/private/definitions/template/home.yml
+extend: base.yml  # erbt die Basis-Konfiguration
+
+template:
+  home:
+    sections:
+      - header
+      - slider    # eigene Sektion
+      - content
+      - footer
+    defaults:
+      show_breadcrumb: false  # überschreibt einzelnen Wert
+```
+
+### Debug-Modus
+
+Zur Überprüfung der geladenen Definitionen kann der Debug-Modus genutzt werden:
+
+```php
+rex_extension::register('BSC_CONFIG_LOADED', function(rex_extension_point $ep) {
+    if (rex::isDebugMode()) {
+        dump('Geladene Definition Pfade:', BSC\config::getAll());
+        
+        if ($templateConfig = BSC\config::get('template')) {
+            dump('Template Konfigurationen:', $templateConfig);
+        }
+    }
+});
 ```
 
 ### Verwendung im Code
@@ -105,18 +193,6 @@ $sections = config::get('template.default.sections', []);
 
 ## Erweiterte Funktionen
 
-### YAML-Vererbung
-
-Sie können YAML-Dateien voneinander erben lassen:
-
-```yaml
-extend: base.yml
-
-template:
-  custom:
-    name: Erweitertes Template
-```
-
 ### Extension Points
 
 Das Addon bietet verschiedene Extension Points zur Erweiterung:
@@ -130,24 +206,19 @@ Das Addon bietet verschiedene Extension Points zur Erweiterung:
 - `DEFINITION_BEFORE_CACHE_SAVE`: Wird vor dem Speichern des Caches aufgerufen
 - `DEFINITION_AFTER_CACHE_SAVE`: Wird nach dem Speichern des Caches aufgerufen
 
-Beispiel für die Verwendung eines Extension Points:
+### Best Practices
 
-```php
-rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
-    $schemes = $ep->getSubject();
-    // Eigene Suchpfade hinzufügen
-    $schemes[] = "definitions/custom/*.yml";
-    return $schemes;
-});
-```
-
-### Best Practices für Definition-Verzeichnisse
-
-- Gruppieren Sie Definitionen nach logischen Einheiten (navigation, template, module etc.)
+- Nutzen Sie die empfohlene Verzeichnisstruktur für bessere Übersichtlichkeit
+- Verwenden Sie `theme_path::base()` für den Zugriff auf Theme-Verzeichnisse
+- Beachten Sie die Ladereihenfolge beim Überschreiben von Definitionen
+- Nutzen Sie `extend` für die Vererbung von Basis-Konfigurationen innerhalb einer Ebene
+- Verwenden Sie strukturelle Überschreibungen für ebenenübergreifende Anpassungen
+- Nutzen Sie das Theme-Addon für theme-spezifische Konfigurationen
+- Verwenden Sie das Project-Addon für finale projektspezifische Überschreibungen
+- Gruppieren Sie Definitionen nach logischen Einheiten
 - Nutzen Sie sprechende Dateinamen
-- Beachten Sie die Ladereihenfolge bei überschreibenden Definitionen
-- Verwenden Sie relative Pfade ausgehend vom REDAXO-Root
-- Dokumentieren Sie die Verzeichnisstruktur im Projekt
+- Dokumentieren Sie Ihre Konfigurationsstrukturen
+- Aktivieren Sie den Debug-Modus während der Entwicklung
 
 ### Caching
 
@@ -173,14 +244,6 @@ class CustomMergeHandler implements DefinitionMergeInterface
     }
 }
 ```
-
-## Best Practices
-
-- Strukturieren Sie Ihre YAML-Dateien logisch nach Funktionsbereichen
-- Nutzen Sie die Vererbungsfunktion für wiederkehrende Basis-Konfigurationen
-- Implementieren Sie eigene Merge-Handler für spezielle Anwendungsfälle
-- Nutzen Sie Extension Points für flexible Anpassungen
-- Dokumentieren Sie Ihre Konfigurationsstrukturen
 
 ## Support & Lizenz
 

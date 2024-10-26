@@ -1,0 +1,31 @@
+definitions_title = Definitions
+definitions_settings = Einstellungen
+
+definitions_config_saved = Die Einstellungen wurden gespeichert
+definitions_cache_deleted = Der Cache wurde gelöscht
+definitions_cache_not_deleted = Der Cache konnte nicht gelöscht werden
+
+definitions_base_path = Basis-Pfad
+definitions_base_path_note = Relativer Pfad ausgehend vom REDAXO Data-Verzeichnis
+
+definitions_definition_keys = Definition Pfade
+definitions_definition_key_navigation = Navigation
+definitions_definition_key_template = Templates
+definitions_definition_key_module = Module
+definitions_definition_keys_note = Pfad relativ zum Basis-Pfad, z.B. navigation/*.yml
+definitions_definition_package_default = Standard-Wert (package.yml)
+definitions_current_value = Aktueller Wert
+
+definitions_cache = Cache
+definitions_cache_enabled = Cache aktivieren
+definitions_cache_enabled_note = Aktiviert/Deaktiviert den Definition Cache
+
+definitions_cache_ttl = Cache Lebensdauer
+definitions_cache_ttl_note = Zeit in Sekunden
+
+definitions_debug = Debug Modus
+definitions_debug_note = Zeigt erweiterte Debug-Informationen im Backend
+
+# System Kategorien
+definitions_system = System
+definitions_config = Konfiguration
