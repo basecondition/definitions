@@ -13,6 +13,7 @@ Ein REDAXO-Addon zur zentralen Verwaltung von Konfigurationen und Definitionen �
 - Flexibles Caching-System für optimale Performance
 - Erweiterbare Struktur durch Extension Points
 - Unterstützung für Template-, Navigations- und Modulkonfigurationen
+- Freie Konfigurationen für eigene Anwendungsfälle
 - Automatisches Laden von Konfigurationen beim Systemstart
 - Vererbung von Basis-Konfigurationen durch `extend`-Funktionalität
 - Flexible Registrierung von Definition-Verzeichnissen
@@ -26,53 +27,14 @@ Ein REDAXO-Addon zur zentralen Verwaltung von Konfigurationen und Definitionen �
    - REDAXO >= 5.15.0
    - PHP >= 8.1
 
-## Grundlegende Verwendung
+## Grundlegende Konzepte
 
-### Definition-Verzeichnisse registrieren
+Das Addon bietet zwei Hauptanwendungsfälle:
 
-Die Registrierung erfolgt nach einer klaren Prioritätenreihenfolge, die bestimmt, wie Definitionen überschrieben werden:
-
-1. **Core/AddOn Definitionen (EARLY):**
-```php
-rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
-    $schemes = $ep->getSubject();
-    // AddOn spezifische Definitionen
-    if ($addon = rex_addon::get('mein_addon')) {
-        $schemes[] = $addon->getPath('definitions/*.yml');
-    }
-    return $schemes;
-}, rex_extension::EARLY);
-```
-
-2. **Theme Definitionen (NORMAL):**
-```php
-rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
-    $schemes = $ep->getSubject();
-    if (rex_addon::exists('theme') && $theme = rex_addon::get('theme')) {
-        // Definitionen im Theme-Ordner via theme_path::base()
-        $schemes[] = theme_path::base('private/definitions/navigation/*.yml');
-        $schemes[] = theme_path::base('private/definitions/template/*.yml');
-        $schemes[] = theme_path::base('private/definitions/module/*/*.yml');
-    }
-    return $schemes;
-});
-```
-
-3. **Project-Addon Definitionen (LATE):**
-```php
-rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
-    $schemes = $ep->getSubject();
-    $projectPath = rex_addon::get('project')->getPath();
-    $schemes[] = $projectPath . 'definitions/navigation/*.yml';
-    $schemes[] = $projectPath . 'definitions/template/*.yml';
-    $schemes[] = $projectPath . 'definitions/module/*/*.yml';
-    return $schemes;
-}, rex_extension::LATE);
-```
+1. **System-Definitionen**: Vordefinierte Strukturen für Templates, Navigation und Module
+2. **Freie Konfigurationen**: Beliebige eigene YAML-basierte Konfigurationen
 
 ### Empfohlene Verzeichnisstruktur
-
-Nach der Installation wird folgende Verzeichnisstruktur empfohlen:
 
 ```
 redaxo-root/
@@ -96,43 +58,51 @@ redaxo-root/
 │               └── module/
 ```
 
-### Überschreiben von Definitionen
+## System-Definitionen verwenden
 
-Die Überschreibung von Definitionen erfolgt primär durch:
-1. Strukturelle Übereinstimmung der YAML-Struktur
-2. Die Ladereihenfolge (EARLY, NORMAL, LATE)
+### Definition-Verzeichnisse registrieren
 
-Beispiel für Überschreibung:
+Die Registrierung erfolgt nach einer klaren Prioritätenreihenfolge:
 
-```yaml
-# /redaxo/data/definitions/template/default.yml
-template:
-  default:
-    name: "Standard Template"
-    sections:
-      - header
-      - content
-      - footer
+1. **Core/AddOn Definitionen (EARLY):**
+```php
+rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
+    $schemes = $ep->getSubject();
+    if ($addon = rex_addon::get('mein_addon')) {
+        $schemes[] = $addon->getPath('definitions/*.yml');
+    }
+    return $schemes;
+}, rex_extension::EARLY);
+```
 
-# /themes/private/definitions/template/default.yml
-template:
-  default:
-    name: "Theme Template"    # überschreibt den Namen
-    sections:
-      - header
-      - slider              # überschreibt die sections komplett
-      - content
-      - footer
+2. **Theme Definitionen (NORMAL):**
+```php
+rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
+    $schemes = $ep->getSubject();
+    if (rex_addon::exists('theme')) {
+        $schemes[] = theme_path::base('private/definitions/navigation/*.yml');
+        $schemes[] = theme_path::base('private/definitions/template/*.yml');
+        $schemes[] = theme_path::base('private/definitions/module/*/*.yml');
+    }
+    return $schemes;
+});
+```
 
-# /redaxo/addons/project/definitions/template/default.yml
-template:
-  default:
-    name: "Projekt Template"  # überschreibt den Namen erneut
+3. **Project-Addon Definitionen (LATE):**
+```php
+rex_extension::register('BSC_CONFIG_LOAD', function(rex_extension_point $ep) {
+    $schemes = $ep->getSubject();
+    $projectPath = rex_addon::get('project')->getPath();
+    $schemes[] = $projectPath . 'definitions/navigation/*.yml';
+    $schemes[] = $projectPath . 'definitions/template/*.yml';
+    $schemes[] = $projectPath . 'definitions/module/*/*.yml';
+    return $schemes;
+}, rex_extension::LATE);
 ```
 
 ### Vererbung mittels extend
 
-Die `extend`-Funktionalität dient der Vererbung von Basis-Konfigurationen innerhalb einer Ebene:
+Die `extend`-Funktionalität ermöglicht die Vererbung von Basis-Konfigurationen:
 
 ```yaml
 # /themes/private/definitions/template/base.yml
@@ -160,9 +130,130 @@ template:
       show_breadcrumb: false  # überschreibt einzelnen Wert
 ```
 
-### Debug-Modus
+### Überschreiben von Definitionen
 
-Zur Überprüfung der geladenen Definitionen kann der Debug-Modus genutzt werden:
+Das Überschreiben erfolgt durch strukturelle Übereinstimmung und Ladereihenfolge:
+
+```yaml
+# /redaxo/data/definitions/template/default.yml
+template:
+   default:
+      name: "Standard Template"
+      sections:
+         - header
+         - content
+         - footer
+
+# /themes/private/definitions/template/default.yml
+template:
+   default:
+      name: "Theme Template"    # überschreibt den Namen
+      sections:
+         - header
+         - slider              # überschreibt die sections
+         - content
+         - footer
+
+# /redaxo/addons/project/definitions/template/default.yml
+template:
+   default:
+      name: "Projekt Template"  # überschreibt den Namen erneut
+```
+
+## Die Config-Klasse verwenden
+
+Die Config-Klasse ist das zentrale Element für den Zugriff auf Definitionen und Konfigurationen.
+
+### System-Definitionen abrufen
+
+```php
+use BSC\config;
+
+// Template-Definition abrufen
+$templateConfig = config::get('template.default');
+
+// Navigations-Definition abrufen  
+$navigationConfig = config::get('navigation.main');
+
+// Modul-Definition abrufen
+$moduleConfig = config::get('module.news');
+```
+
+### Freie Konfigurationen
+
+Die Config-Klasse eignet sich auch für eigene Konfigurationen:
+
+```php
+use BSC\config;
+
+// Konfigurationsdateien laden
+config::loadConfig([
+    'resources/*.yml',           // Verzeichnis
+    'config/listener.yml',       // Einzelne Datei
+    'services/*.yml'            // Weiteres Verzeichnis
+]);
+
+// Zugriff auf Konfigurationen
+$apiKey = config::get('resources.api.key');
+$serviceConfig = config::get('services.mail');
+```
+
+#### Beispiel: Event Listener Konfiguration
+
+```yaml
+# services/listener.yml
+services:
+   listener:
+      PAGE_HEADER:
+         - SecurityHeaderService::addSecurityHeaders
+      PACKAGES_INCLUDED:
+         - CacheService::clearCache
+```
+
+```php
+// Listener registrieren
+$listeners = config::get('services.listener');
+foreach($listeners as $event => $callbacks) {
+    foreach($callbacks as $callback) {
+        rex_extension::register($event, $callback);
+    }
+}
+```
+
+#### Beispiel: API Konfiguration
+
+```yaml
+# resources/api.yml
+api:
+   endpoints:
+      users: "https://api.example.com/users"
+      posts: "https://api.example.com/posts"
+   settings:
+      timeout: 30
+      retries: 3
+```
+
+### Dynamische Konfigurationen
+
+Die Config-Klasse unterstützt auch das dynamische Setzen von Werten:
+
+```php
+// Einzelwert setzen
+config::set('cache.enabled', true);
+
+// Komplette Sektion setzen
+config::set('mail', [
+    'host' => 'smtp.example.com',
+    'port' => 587
+]);
+
+// Wert an String anhängen
+config::addStringTo('assets.css', 'custom.css');
+```
+
+## Debug-Modus
+
+Zur Überprüfung der geladenen Definitionen:
 
 ```php
 rex_extension::register('BSC_CONFIG_LOADED', function(rex_extension_point $ep) {
@@ -176,74 +267,45 @@ rex_extension::register('BSC_CONFIG_LOADED', function(rex_extension_point $ep) {
 });
 ```
 
-### Verwendung im Code
+## Extension Points
 
-```php
-use BSC\config;
+Das Addon bietet folgende Extension Points:
 
-// Komplette Konfiguration abrufen
-$allConfig = config::getAll();
+- `BSC_CONFIG_LOAD`: Beim Laden der Konfigurationen
+- `BSC_CONFIG_LOADED`: Nach dem Laden aller Konfigurationen
+- `BSC_DEFINITIONS_LOAD`: Beim Laden der Definitionen
+- `DEFINITION_CACHE_KEY`: Zur Modifikation des Cache-Keys
+- `DEFINITION_BEFORE_CACHE_LOAD`: Vor dem Laden des Caches
+- `DEFINITION_AFTER_CACHE_LOAD`: Nach dem Laden des Caches
+- `DEFINITION_BEFORE_CACHE_SAVE`: Vor dem Speichern des Caches
+- `DEFINITION_AFTER_CACHE_SAVE`: Nach dem Speichern des Caches
 
-// Spezifischen Wert abrufen
-$templateName = config::get('template.default.name');
+## Best Practices
 
-// Wert mit Standardwert abrufen
-$sections = config::get('template.default.sections', []);
-```
+1. **Strukturierung:**
+   - Nutzen Sie die empfohlene Verzeichnisstruktur
+   - Gruppieren Sie Konfigurationen nach logischen Einheiten
+   - Verwenden Sie sprechende Dateinamen
 
-## Erweiterte Funktionen
+2. **Ladereihenfolge:**
+   - Beachten Sie die EARLY/NORMAL/LATE Prioritäten
+   - Nutzen Sie das Project-Addon für finale Überschreibungen
+   - Laden Sie projekt-spezifische Konfigurationen früh im Boot-Prozess
 
-### Extension Points
+3. **Konfigurationsmanagement:**
+   - Nutzen Sie `extend` für die Vererbung innerhalb einer Ebene
+   - Verwenden Sie strukturelle Überschreibungen für ebenenübergreifende Anpassungen
+   - Halten Sie sensible Daten in separaten Konfigurationsdateien
 
-Das Addon bietet verschiedene Extension Points zur Erweiterung:
+4. **Performance:**
+   - Aktivieren Sie das Caching in Produktivumgebungen
+   - Vermeiden Sie das mehrfache Laden gleicher Konfigurationen
+   - Cachen Sie häufig verwendete Konfigurationswerte
 
-- `BSC_CONFIG_LOAD`: Wird beim Laden der Konfigurationen aufgerufen
-- `BSC_CONFIG_LOADED`: Wird nach dem Laden aller Konfigurationen aufgerufen
-- `BSC_DEFINITIONS_LOAD`: Wird beim Laden der Definitionen aufgerufen
-- `DEFINITION_CACHE_KEY`: Ermöglicht die Modifikation des Cache-Keys
-- `DEFINITION_BEFORE_CACHE_LOAD`: Wird vor dem Laden des Caches aufgerufen
-- `DEFINITION_AFTER_CACHE_LOAD`: Wird nach dem Laden des Caches aufgerufen
-- `DEFINITION_BEFORE_CACHE_SAVE`: Wird vor dem Speichern des Caches aufgerufen
-- `DEFINITION_AFTER_CACHE_SAVE`: Wird nach dem Speichern des Caches aufgerufen
-
-### Best Practices
-
-- Nutzen Sie die empfohlene Verzeichnisstruktur für bessere Übersichtlichkeit
-- Verwenden Sie `theme_path::base()` für den Zugriff auf Theme-Verzeichnisse
-- Beachten Sie die Ladereihenfolge beim Überschreiben von Definitionen
-- Nutzen Sie `extend` für die Vererbung von Basis-Konfigurationen innerhalb einer Ebene
-- Verwenden Sie strukturelle Überschreibungen für ebenenübergreifende Anpassungen
-- Nutzen Sie das Theme-Addon für theme-spezifische Konfigurationen
-- Verwenden Sie das Project-Addon für finale projektspezifische Überschreibungen
-- Gruppieren Sie Definitionen nach logischen Einheiten
-- Nutzen Sie sprechende Dateinamen
-- Dokumentieren Sie Ihre Konfigurationsstrukturen
-- Aktivieren Sie den Debug-Modus während der Entwicklung
-
-### Caching
-
-Das Addon implementiert ein automatisches Caching-System mit einer Standard-TTL von 48 Stunden. Der Cache kann über die Extension Points beeinflusst oder manuell geleert werden.
-
-### Eigene Definition Handler
-
-Sie können eigene Handler für spezielle Definitionen erstellen:
-
-```php
-class CustomMergeHandler implements DefinitionMergeInterface 
-{
-    public function mergeGroup(array $group): array 
-    {
-        // Eigene Merge-Logik
-        return $group;
-    }
-
-    public function mergeDefinition(array $definitions): array 
-    {
-        // Eigene Definition-Logik
-        return $definitions;
-    }
-}
-```
+5. **Entwicklung:**
+   - Aktivieren Sie den Debug-Modus während der Entwicklung
+   - Dokumentieren Sie Ihre Konfigurationsstrukturen
+   - Nutzen Sie Versionskontrolle für Konfigurationsdateien
 
 ## Support & Lizenz
 
