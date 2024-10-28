@@ -10,6 +10,7 @@ Ein REDAXO-Addon zur zentralen Verwaltung von Konfigurationen und Definitionen �
 ## Features
 
 - Zentrale Verwaltung von Konfigurationen über YAML-Dateien
+- Automatische Template- und Modulkontext-Erkennung
 - Flexibles Caching-System für optimale Performance
 - Erweiterbare Struktur durch Extension Points
 - Unterstützung für Template-, Navigations- und Modulkonfigurationen
@@ -59,6 +60,80 @@ redaxo-root/
 ```
 
 ## System-Definitionen verwenden
+
+### Automatische Kontext-Erkennung
+
+Das Definitions Addon erkennt automatisch den Template-Key des aktuell verwendeten Artikels. Dies ermöglicht eine dynamische Zusammenstellung sowohl der Template- als auch der Modul-Definitionen ohne manuelle Verkettung.
+
+#### Template-Abhängige Definitionen
+
+```php
+// Im Template oder Modul
+$templateConfig = BSC\config::get('template');
+// Lädt automatisch die Template-Definition basierend auf dem aktiven Template
+
+$moduleConfig = BSC\config::get('module');
+// Lädt automatisch die Modul-Definition passend zum Template-Kontext
+```
+
+#### Verzeichnisstruktur für Module
+```
+definitions/
+└── module/
+    ├── blog/                  # Template-Key "blog"
+    │   ├── text_image.yml     # Modul-Definition für blog
+    │   └── gallery.yml
+    ├── shop/                  # Template-Key "shop"
+    │   ├── text_image.yml     # Gleiche Module, andere Definition
+    │   └── gallery.yml
+    └── default/              # Template-Key "default"
+        ├── text_image.yml    # Default Definition
+        └── gallery.yml
+```
+
+#### Beispiel: Modulkonfiguration je nach Template-Kontext
+
+```yaml
+# /definitions/module/blog/text_image.yml
+module:
+    image:
+        sizes:
+            - 800x450  # Blog-optimierte Bildgrößen
+            - 400x225
+        class: 'blog-image'
+    layout:
+        type: 'blog-layout'
+        
+# /definitions/module/shop/text_image.yml
+module:
+    image:
+        sizes:
+            - 600x600  # Quadratische Product-Shots
+            - 300x300
+        class: 'product-image'
+    layout:
+        type: 'shop-layout'
+
+# /definitions/module/default/text_image.yml
+module:
+    image:
+        sizes:
+            - 1200x400  # Breite Content-Bilder
+            - 600x200
+        class: 'content-image'
+    layout:
+        type: 'default-layout'
+```
+
+Das Addon erkennt automatisch den Template-Key des aktuellen Artikels und lädt die entsprechenden Modul-Definitionen aus dem passenden Unterverzeichnis. Dadurch kann ein und dasselbe Modul je nach Template-Kontext unterschiedliche Konfigurationen erhalten, ohne dass dies im Modul selbst definiert werden muss.
+
+#### Vorteile der Kontext-Erkennung
+- Module passen sich automatisch dem Template-Kontext an
+- Ein Modul kann in verschiedenen Templates unterschiedlich konfiguriert werden
+- Keine manuelle Verkettung der Template-Keys notwendig
+- Wiederverwendbarkeit von Modulen über verschiedene Templates hinweg
+- Zentrale Steuerung des Modul-Verhaltens über Templates
+- Saubere Trennung von Modul-Logik und Template-spezifischer Konfiguration
 
 ### Definition-Verzeichnisse registrieren
 
@@ -170,13 +245,13 @@ Die Config-Klasse ist das zentrale Element für den Zugriff auf Definitionen und
 use BSC\config;
 
 // Template-Definition abrufen
-$templateConfig = config::get('template.default');
+$templateConfig = config::get('template');
 
 // Navigations-Definition abrufen  
 $navigationConfig = config::get('navigation.main');
 
 // Modul-Definition abrufen
-$moduleConfig = config::get('module.news');
+$moduleConfig = config::get('module');
 ```
 
 ### Freie Konfigurationen
