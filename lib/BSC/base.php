@@ -15,8 +15,8 @@ class base extends AbstractDefinitionProvider
 {
     public static function getTemplateKey(int|null $id = null): ?string
     {
-        if (is_null($id)) {
-            $id = rex_article::getCurrent()->getTemplateId();
+        if (is_null($id) && !is_null($article = rex_article::getCurrent())) {
+            $id = $article->getTemplateId();
         }
         $template = new rex_template($id);
         return $template->getKey();
