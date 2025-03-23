@@ -19,9 +19,6 @@ class DefinitionConfig
             'navigation' => 'navigation/*.yml',
             'template' => 'template/*.yml',
             'module' => 'module/*/*.yml'
-        ],
-        'cache' => [
-            'ttl' => 172800 // 48h in Sekunden
         ]
     ];
 
@@ -43,10 +40,11 @@ class DefinitionConfig
     {
         // Default-Werte aus package.yml laden
         $packageDefaults = $this->addon->getProperty('config', []);
+        $basePath = $packageDefaults['base_path'];
 
         // Konfiguration zusammenbauen
         $this->config = [
-            'base_path' => $this->getConfigValue('base_path', $packageDefaults),
+            'base_path' => (!empty($basePath)) ? $basePath: $packageDefaults,
             'definition_keys' => $this->getDefinitionKeysConfig($packageDefaults),
             'cache' => $this->getCacheConfig($packageDefaults)
         ];
@@ -66,42 +64,40 @@ class DefinitionConfig
     private function getDefinitionKeysConfig(array $packageDefaults): array
     {
         // 1. Gespeicherte Konfiguration laden
-        $savedKeys = $this->addon->getConfig('definition_keys');
+        $savedKeys = $this->addon->getConfig('definition_keys', []);
 
         // 2. Package Defaults als Basis verwenden
         $defaultKeys = $packageDefaults['definition_keys'] ?? self::FALLBACKS['definition_keys'];
 
-        if (!is_array($savedKeys)) {
-            return $defaultKeys;
-        }
-
-        // Stelle sicher, dass alle Default-Keys existieren
-        foreach ($defaultKeys as $key => $defaultValue) {
-            if (empty($savedKeys[$key])) {
-                $savedKeys[$key] = $defaultValue;
-            }
-        }
-
-        return $savedKeys;
+        // Recursive merge anwenden statt manueller Zusammenführung
+        return $this->arrayMergeRecursive($defaultKeys, $savedKeys);
     }
 
     private function getCacheConfig(array $packageDefaults): array
     {
         // 1. Gespeicherte Cache-Konfiguration laden
-        $savedCache = $this->addon->getConfig('cache');
+        $savedCache = $this->addon->getConfig('cache', []);
 
         // 2. Package Defaults als Basis verwenden
-        $defaultCache = $packageDefaults['cache'] ?? self::FALLBACKS['cache'];
+        $defaultCache = $packageDefaults['cache'] ?? self::FALLBACKS;
 
-        if (!is_array($savedCache)) {
-            return $defaultCache;
+        // recursive merge
+        return $this->arrayMergeRecursive($defaultCache, $savedCache);
+    }
+
+    private function arrayMergeRecursive(array $array1, array $array2): array
+    {
+        $merged = $array1;
+
+        foreach ($array2 as $key => $value) {
+            if (is_array($value) && isset($array1[$key]) && is_array($array1[$key])) {
+                $merged[$key] = $this->arrayMergeRecursive($array1[$key], $value);
+            } else {
+                $merged[$key] = $value;
+            }
         }
 
-        return [
-            'ttl' => isset($savedCache['ttl'])
-                ? (int)$savedCache['ttl']
-                : $defaultCache['ttl']
-        ];
+        return $merged;
     }
 
     public function getBasePath(): string
@@ -125,11 +121,6 @@ class DefinitionConfig
             }
         }
         return $schemes;
-    }
-
-    public function getCacheTTL(): int
-    {
-        return $this->config['cache']['ttl'];
     }
 
     public function isDebugEnabled(): bool

@@ -20,12 +20,10 @@ definitions_cache = Cache
 definitions_cache_enabled = Cache aktivieren
 definitions_cache_enabled_note = Aktiviert/Deaktiviert den Definition Cache
 
-definitions_cache_ttl = Cache Lebensdauer
-definitions_cache_ttl_note = Zeit in Sekunden
-
 definitions_debug = Debug Modus
 definitions_debug_note = Zeigt erweiterte Debug-Informationen im Backend
 
-# System Kategorien
 definitions_system = System
 definitions_config = Konfiguration
+
+definitions_documentation = Dokumentation

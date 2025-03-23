@@ -46,25 +46,6 @@ foreach ($packageDefaults['definition_keys'] as $key => $defaultPath) {
     );
 }
 
-// Cache Settings
-$fieldset = $form->addFieldset($addon->i18n('cache'));
-
-// Cache TTL
-$field = $form->addTextField('cache[ttl]');
-$field->setLabel($addon->i18n('cache_ttl'));
-$value = $addon->getConfig('cache')['ttl'] ?? null;
-$default = $packageDefaults['cache']['ttl'];
-$field->setValue($value);
-$field->setAttribute('placeholder', $default);
-$field->setNotice(
-    $addon->i18n('cache_ttl_note') .
-    '<br>' .
-    '<span class="text-muted">' .
-    $addon->i18n('definition_package_default') . ': <code>' . $default . '</code>' .
-    ($value && $value !== $default ? '<br>' . $addon->i18n('current_value') . ': <code>' . $value . '</code>' : '') .
-    '</span>'
-);
-
 // Formular ausgeben
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'edit', false);

@@ -6,6 +6,7 @@ use BSC\Repository\YComGroupRepository;
 use rex_extension;
 use rex_extension_point;
 use rex_path;
+use rex_yform_manager_dataset;
 use Symfony\Component\Yaml\Parser;
 
 /**
@@ -23,9 +24,8 @@ abstract class AbstractDefinitionProvider
 
         // register extension point
         self::$searchSchemes = rex_extension::registerPoint(new rex_extension_point('BSC_DEFINITIONS_LOAD', $searchSchemes));
-        foreach (self::$searchSchemes as $key => $schema) {
-            // TODO config parameter base path für definitions
 
+        foreach (self::$searchSchemes as $key => $schema) {
             self::$searchSchemes[$key] = rex_path::data($schema);
 
 //            if (\rex_addon::exists('project') && \rex_addon::get('project')->isAvailable()) {
@@ -42,13 +42,25 @@ abstract class AbstractDefinitionProvider
         }
     }
 
-    // TODO auch hier sollte noch ein EP rein!
     public static function setDefinition(array|string $definition, string $alternativeKey): void
     {
+        // Register extension point before setting definition
+        $definition = rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_SET',
+            $definition,
+            ['key' => $alternativeKey]
+        ));
+
         self::set($alternativeKey, self::getParsedDefinition($definition));
+
+        // Register extension point after setting definition
+        rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_SET_AFTER',
+            null,
+            ['key' => $alternativeKey, 'definition' => $definition]
+        ));
     }
 
-    // TODO ich will das nachträgliche überschreiben der fertigen definition erlauben -> hier muss auch in jedem fall noch ein EP rein!
     public static function overwriteDefinition(array|string $definition, string $alternativeKey = null): void
     {
         // 1. parse definition
@@ -56,16 +68,43 @@ abstract class AbstractDefinitionProvider
         // 2. get existed definition to overwrite
         $baseDefinition = self::$definitions;
         if (!is_null($alternativeKey)) $baseDefinition = self::get($alternativeKey);
+
+        // Register extension point before overwriting
+        $definition = rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_OVERWRITE',
+            $definition,
+            [
+                'key' => $alternativeKey,
+                'base_definition' => $baseDefinition
+            ]
+        ));
+
         // 3. overwrite
-        // TODO
-        //  EP vor execution -> damit kann man sich hier noch einkinken -> zum bearbeiten des definition sets vordem es als überschreib set genutzt wird
         $result = array_merge_recursive($baseDefinition, $definition);
+
+        // Register extension point after merging but before setting
+        $result = rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_OVERWRITE_MERGED',
+            $result,
+            [
+                'key' => $alternativeKey,
+                'original_definition' => $definition,
+                'base_definition' => $baseDefinition
+            ]
+        ));
+
         self::setDefinition($result, $alternativeKey);
     }
 
-    // TODO hier sollte auch noch ein EP rein!
     public static function set(string|int $key, mixed $value): void
     {
+        // Register extension point before setting value
+        $value = rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_VALUE_SET',
+            $value,
+            ['key' => $key]
+        ));
+
         if (str_contains($key, '.')) {
             $definitions = &self::$definitions; // Verwende "&" für die Referenz, um das Original-Array zu aktualisieren
             $keys = explode('.', $key);
@@ -82,12 +121,32 @@ abstract class AbstractDefinitionProvider
         } else {
             self::$definitions[$key] = $value;
         }
+
+        // Register extension point after setting value
+        rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_VALUE_SET_AFTER',
+            null,
+            ['key' => $key, 'value' => $value]
+        ));
     }
 
-    // TODO und hier sollte auch noch ein EP rein!
     public static function addStringTo(string $key, string $string): void
     {
+        // Register extension point before adding string
+        $string = rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_STRING_ADD',
+            $string,
+            ['key' => $key, 'current_value' => self::get($key)]
+        ));
+
         self::set($key, self::get($key) . $string);
+
+        // Register extension point after adding string
+        rex_extension::registerPoint(new rex_extension_point(
+            'BSC_DEFINITION_STRING_ADD_AFTER',
+            null,
+            ['key' => $key, 'added_string' => $string, 'new_value' => self::get($key)]
+        ));
     }
 
     public static function get(string|int|null $key = null, mixed $default = null): mixed
@@ -99,11 +158,11 @@ abstract class AbstractDefinitionProvider
 
             foreach ($keys as $index => $key) {
                 // crazy mandant magic
-                if ($key == 'mandant' && isset($definitions[$key]) && $definitions[$key] instanceof \rex_yform_manager_dataset && isset($keys[($index+1)])) {
+                if ($key == 'mandant' && isset($definitions[$key]) && $definitions[$key] instanceof rex_yform_manager_dataset && isset($keys[($index+1)])) {
                     $mandant = $definitions[$key];
                     if ($keys[($index + 1)] == 'ycom_group') {
                         $definition = self::getMandantGroup($mandant->getValue('key'));
-                        if (isset($keys[($index + 2)]) && $definition instanceof \rex_yform_manager_dataset) {
+                        if (isset($keys[($index + 2)]) && $definition instanceof rex_yform_manager_dataset) {
                             $definition = $definition->getValue($keys[($index + 2)]);
                         }
                         return $definition;
@@ -122,9 +181,9 @@ abstract class AbstractDefinitionProvider
         return (isset(self::$definitions[$key])) ? self::$definitions[$key] : $default;
     }
 
-    private static function getMandantGroup($mandantKey): ?\rex_yform_manager_dataset
+    private static function getMandantGroup($mandantKey): ?rex_yform_manager_dataset
     {
-        if (!self::get('ycom.mandant_group') instanceof \rex_yform_manager_dataset) {
+        if (!self::get('ycom.mandant_group') instanceof rex_yform_manager_dataset) {
             self::set('ycom.mandant_group', YComGroupRepository::findGroupByMandantKey($mandantKey));
         }
         return self::get('ycom.mandant_group');

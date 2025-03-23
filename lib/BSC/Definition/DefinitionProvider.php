@@ -2,28 +2,28 @@
 
 namespace BSC\Definition;
 
+use Exception;
 use rex_addon;
 use rex_file;
 use rex_logger;
 use rex_extension;
 use rex_extension_point;
+use RuntimeException;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Exception\ParseException;
 
 class DefinitionProvider
 {
-    public const CACHE_TTL = 345600; // 48h
     private const CACHE_FILE_EXTENSION = '.cache';
 
     /**
      * @param array<DefinitionMergeInterface>|null $mergeHandler
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public static function load(
         array|string $searchSchemes,
         ?array $mergeHandler = null,
-        ?array $toMerge = null,
-        int $cacheTTL = self::CACHE_TTL
+        ?array $toMerge = null
     ): array {
         if (is_string($searchSchemes)) {
             $searchSchemes = [$searchSchemes];
@@ -50,14 +50,14 @@ class DefinitionProvider
 
             return $definition;
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             rex_logger::logException($e);
-            throw new \RuntimeException('Failed to load definitions: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Failed to load definitions: ' . $e->getMessage(), 0, $e);
         }
     }
 
     /**
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     private static function collectFiles(array $searchSchemes, ?array $toMerge): array
     {
@@ -67,7 +67,7 @@ class DefinitionProvider
         foreach ($searchSchemes as $searchSchema) {
             $files = glob($searchSchema);
             if ($files === false) {
-                throw new \RuntimeException("Failed to glob files for schema: $searchSchema");
+                throw new RuntimeException("Failed to glob files for schema: $searchSchema");
             }
 
             foreach ($files as $file) {
@@ -170,7 +170,7 @@ class DefinitionProvider
                     static function($file) use ($parser) {
                         $content = file_get_contents($file);
                         if ($content === false) {
-                            throw new \RuntimeException("Failed to read file: $file");
+                            throw new RuntimeException("Failed to read file: $file");
                         }
                         return $parser->parse($content);
                     },
@@ -188,8 +188,6 @@ class DefinitionProvider
     {
         return rex_addon::get('definitions')->getCachePath($cacheKey . self::CACHE_FILE_EXTENSION);
     }
-
-    // Rest der Klasse bleibt unverändert...
 
     private static function transformKeysRecursive(array $data): array
     {

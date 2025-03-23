@@ -1,5 +1,5 @@
 package: definitions
-version: 1.1.0
+version: 1.2.0
 author: Joachim Doerr
 supportpage: https://github.com/basecondition/definitions
 
@@ -15,19 +15,19 @@ config:
     navigation: "navigation/*.yml"
     template: "template/*.yml"
     module: "module/*/*.yml"
-  cache:
-    ttl: 172800  # 48h in Sekunden
 
-# Backend Seiten
-page:
-  title: 'translate:title'
-  perm: admin
-  icon: rex-icon fa-code
-  subpages:
-    settings:
-      title: 'translate:settings'
-      icon: rex-icon fa-cog
-      perm: admin[]
-
-# Übersetzungen laden
-i18n: true
+## Backend Seiten
+#page:
+#  title: 'translate:title'
+#  perm: admin
+#  icon: rex-icon fa-code
+#  subpages:
+#    settings:
+#      title: 'translate:settings'
+#      icon: rex-icon fa-cog
+#      perm: admin[]
+#    readme:
+#      title: 'translate:documentation'
+#      icon: rex-icon fa-book
+#      perm: admin[]
+#      itemclass: pull-right
