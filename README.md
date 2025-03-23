@@ -96,33 +96,33 @@ definitions/
 ```yaml
 # /definitions/module/blog/text_image.yml
 module:
-    image:
-        sizes:
-            - 800x450  # Blog-optimierte Bildgrößen
-            - 400x225
-        class: 'blog-image'
-    layout:
-        type: 'blog-layout'
-        
+   image:
+      sizes:
+         - 800x450  # Blog-optimierte Bildgrößen
+         - 400x225
+      class: 'blog-image'
+   layout:
+      type: 'blog-layout'
+
 # /definitions/module/shop/text_image.yml
 module:
-    image:
-        sizes:
-            - 600x600  # Quadratische Product-Shots
-            - 300x300
-        class: 'product-image'
-    layout:
-        type: 'shop-layout'
+   image:
+      sizes:
+         - 600x600  # Quadratische Product-Shots
+         - 300x300
+      class: 'product-image'
+   layout:
+      type: 'shop-layout'
 
 # /definitions/module/default/text_image.yml
 module:
-    image:
-        sizes:
-            - 1200x400  # Breite Content-Bilder
-            - 600x200
-        class: 'content-image'
-    layout:
-        type: 'default-layout'
+   image:
+      sizes:
+         - 1200x400  # Breite Content-Bilder
+         - 600x200
+      class: 'content-image'
+   layout:
+      type: 'default-layout'
 ```
 
 Das Addon erkennt automatisch den Template-Key des aktuellen Artikels und lädt die entsprechenden Modul-Definitionen aus dem passenden Unterverzeichnis. Dadurch kann ein und dasselbe Modul je nach Template-Kontext unterschiedliche Konfigurationen erhalten, ohne dass dies im Modul selbst definiert werden muss.
@@ -182,27 +182,27 @@ Die `extend`-Funktionalität ermöglicht die Vererbung von Basis-Konfigurationen
 ```yaml
 # /themes/private/definitions/template/base.yml
 template:
-  base:
-    sections:
-      - header
-      - content
-      - footer
-    defaults:
-      show_breadcrumb: true
-      cache_ttl: 3600
+   base:
+      sections:
+         - header
+         - content
+         - footer
+      defaults:
+         show_breadcrumb: true
+         cache_ttl: 3600
 
 # /themes/private/definitions/template/home.yml
 extend: base.yml  # erbt die Basis-Konfiguration
 
 template:
-  home:
-    sections:
-      - header
-      - slider    # eigene Sektion
-      - content
-      - footer
-    defaults:
-      show_breadcrumb: false  # überschreibt einzelnen Wert
+   home:
+      sections:
+         - header
+         - slider    # eigene Sektion
+         - content
+         - footer
+      defaults:
+         show_breadcrumb: false  # überschreibt einzelnen Wert
 ```
 
 ### Überschreiben von Definitionen
@@ -346,9 +346,22 @@ rex_extension::register('BSC_CONFIG_LOADED', function(rex_extension_point $ep) {
 
 Das Addon bietet folgende Extension Points:
 
-- `BSC_CONFIG_LOAD`: Beim Laden der Konfigurationen
-- `BSC_CONFIG_LOADED`: Nach dem Laden aller Konfigurationen
-- `BSC_DEFINITIONS_LOAD`: Beim Laden der Definitionen
+### Core Extension Points
+- `BSC_CONFIG_LOAD`: Beim Laden der Konfigurationen, kann zur Modifikation der Suchpfade genutzt werden
+- `BSC_CONFIG_LOADED`: Nach dem Laden aller Konfigurationen, ideal für Debugging oder Nachbearbeitung
+- `BSC_DEFINITIONS_LOAD`: Beim Laden der Definitionen, ermöglicht Modifikation der Definition-Suchpfade
+
+### Definition-Handling Extension Points
+- `BSC_DEFINITION_SET`: Vor dem Setzen einer Definition
+- `BSC_DEFINITION_SET_AFTER`: Nach dem Setzen einer Definition
+- `BSC_DEFINITION_OVERWRITE`: Vor dem Überschreiben einer Definition
+- `BSC_DEFINITION_OVERWRITE_MERGED`: Nach dem Zusammenführen, aber vor dem Setzen einer überschriebenen Definition
+- `BSC_DEFINITION_VALUE_SET`: Vor dem Setzen eines Werts
+- `BSC_DEFINITION_VALUE_SET_AFTER`: Nach dem Setzen eines Werts
+- `BSC_DEFINITION_STRING_ADD`: Vor dem Hinzufügen eines Strings
+- `BSC_DEFINITION_STRING_ADD_AFTER`: Nach dem Hinzufügen eines Strings
+
+### Cache-Handling Extension Points
 - `DEFINITION_CACHE_KEY`: Zur Modifikation des Cache-Keys
 - `DEFINITION_BEFORE_CACHE_LOAD`: Vor dem Laden des Caches
 - `DEFINITION_AFTER_CACHE_LOAD`: Nach dem Laden des Caches
