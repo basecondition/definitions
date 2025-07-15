@@ -4,9 +4,13 @@ namespace BSC;
 
 use BSC\Definition\AbstractDefinitionProvider;
 use BSC\Definition\DefinitionConfig;
+use BSC\Domain\DomainContextProvider;
+use BSC\Language\LanguageContextProvider;
+use rex;
 use rex_article;
 use rex_extension;
 use rex_extension_point;
+use rex_logger;
 use rex_template;
 
 /**
@@ -75,10 +79,15 @@ class config extends AbstractDefinitionProvider
         self::loadDefinitions($moduleSearchSchemes, 'module.');
 
         // Template-Key-basierte Umstrukturierung der Definitionen
+        $domain = DomainContextProvider::getDomainKey();
+        $language = LanguageContextProvider::getCurrentLanguage();
+        $templateKey = base::getTemplateKey();
+
+        // Template-Key-basierte Umstrukturierung der Definitionen
         foreach (self::getConfigDefinitionKeys() as $definitionKey) {
             $moduleConfig = self::get($definitionKey);
-            if (!is_null($moduleConfig) && isset($moduleConfig[base::getTemplateKey()])) {
-                self::setDefinition($moduleConfig[base::getTemplateKey()], $definitionKey);
+            if (!is_null($moduleConfig) && isset($moduleConfig[$templateKey])) {
+                self::setDefinition($moduleConfig[$templateKey], $definitionKey);
             }
         }
 

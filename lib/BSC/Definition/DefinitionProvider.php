@@ -2,6 +2,9 @@
 
 namespace BSC\Definition;
 
+use BSC\base;
+use BSC\Domain\DomainContextProvider;
+use BSC\Language\LanguageContextProvider;
 use Exception;
 use rex_addon;
 use rex_file;
@@ -104,7 +107,15 @@ class DefinitionProvider
             return filemtime($f);
         }, $hashKeys);
 
-        return md5(sprintf("%s:%s", __CLASS__, implode('.', $searchSchemes)))
+        // Domain und Sprache in den Cache-Key einbeziehen
+        $domain = DomainContextProvider::getDomainKey();
+        $language = LanguageContextProvider::getCurrentLanguage();
+        $template = base::getTemplateKey();
+
+        $contextKey = "d_{$domain}_l_{$language}_t_{$template}";
+
+        return md5(sprintf("%s:%s:%s", __CLASS__, implode('.', $searchSchemes), $contextKey))
+//        return md5(sprintf("%s:%s", __CLASS__, implode('.', $searchSchemes)))
             . '.'
             . md5(implode('.', $lastModifications));
     }
